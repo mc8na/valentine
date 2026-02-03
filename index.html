@@ -69,6 +69,36 @@
       border-radius: 20px;
       margin-top: 20px;
     }
+
+    /* Floating hearts */
+    .heart {
+      position: fixed;
+      bottom: -20px;
+      font-size: 24px;
+      animation: floatUp 4s linear forwards;
+      pointer-events: none;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 1; }
+      100% { transform: translateY(-110vh) scale(1.5); opacity: 0; }
+    }
+
+    @media (max-width: 600px) {
+      .card {
+        width: 90%;
+        padding: 30px 20px;
+      }
+
+      h1 {
+        font-size: 1.8rem;
+      }
+
+      button {
+        font-size: 1rem;
+        padding: 12px 22px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -86,7 +116,7 @@
     <img src="us.jpg" alt="Picture of us" />
   </div>
 
-  <audio id="song" src="where-is-my-husband.m4a"></audio>
+  <audio id="song" src="where-is-my-husband.mp3"></audio>
 
   <script>
     const noBtn = document.getElementById('noBtn');
@@ -95,22 +125,84 @@
     const success = document.getElementById('success');
     const song = document.getElementById('song');
 
-    noBtn.addEventListener('mouseenter', () => {
+    const moveNoButton = (event) => {
       const container = document.querySelector('.buttons');
+      const yesRect = yesBtn.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+
       const maxX = container.clientWidth - noBtn.offsetWidth;
       const maxY = container.clientHeight - noBtn.offsetHeight;
 
-      const randX = Math.random() * maxX;
-      const randY = Math.random() * maxY;
+      // Get cursor / touch position
+      let cursorX = null;
+      let cursorY = null;
+      if (event && event.touches && event.touches[0]) {
+        cursorX = event.touches[0].clientX;
+        cursorY = event.touches[0].clientY;
+      } else if (event) {
+        cursorX = event.clientX;
+        cursorY = event.clientY;
+      }
 
-      noBtn.style.left = randX + 'px';
-      noBtn.style.top = randY + 'px';
-    });
+      let attempts = 0;
+      let randX, randY, noRect;
+
+      do {
+        randX = Math.random() * maxX;
+        randY = Math.random() * maxY;
+
+        noBtn.style.left = randX + 'px';
+        noBtn.style.top = randY + 'px';
+
+        noRect = noBtn.getBoundingClientRect();
+        attempts++;
+      } while (
+        attempts < 30 && (
+          // Avoid overlapping Yes button
+          !(
+            noRect.right < yesRect.left ||
+            noRect.left > yesRect.right ||
+            noRect.bottom < yesRect.top ||
+            noRect.top > yesRect.bottom
+          ) ||
+          // Avoid jumping under cursor
+          (cursorX !== null && cursorY !== null &&
+            cursorX > noRect.left - 20 &&
+            cursorX < noRect.right + 20 &&
+            cursorY > noRect.top - 20 &&
+            cursorY < noRect.bottom + 20)
+        )
+      );
+
+      // Briefly disable pointer events to prevent accidental clicks
+      noBtn.style.pointerEvents = 'none';
+      setTimeout(() => {
+        noBtn.style.pointerEvents = 'auto';
+      }, 150);
+    };
+
+    noBtn.addEventListener('mouseenter', moveNoButton);
+    noBtn.addEventListener('touchstart', moveNoButton);
 
     yesBtn.addEventListener('click', () => {
       question.style.display = 'none';
       success.style.display = 'block';
       song.play();
+
+      // Floating hearts effect
+      const heartInterval = setInterval(() => {
+        const heart = document.createElement('div');
+        heart.className = 'heart';
+        heart.textContent = '❤️';
+        heart.style.left = Math.random() * 100 + 'vw';
+        heart.style.fontSize = 20 + Math.random() * 20 + 'px';
+        document.body.appendChild(heart);
+
+        setTimeout(() => heart.remove(), 4000);
+      }, 300);
+
+      // Stop after a while to save performance
+      setTimeout(() => clearInterval(heartInterval), 12000);
     });
   </script>
 </body>
